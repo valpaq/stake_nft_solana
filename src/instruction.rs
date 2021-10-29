@@ -12,6 +12,7 @@ pub enum StakeInstruction {
     /// 0. `[signer]` The account of the person initializing the stake
     /// 1. `[writable]` NFT address
     /// 2. `[writable]` The escrow account, it will hold all necessary info.
+    /// 3. `[]` Token program. Я не совсем понял, откуда он берется.
     Stake {
     },
     /// Unstake NFT 
@@ -23,6 +24,7 @@ pub enum StakeInstruction {
     /// 1. `[writable]` NFT address
     /// 2. `[writable]` The escrow account, it will hold all necessary info.
     /// 3. `[]` The PDA account
+    /// 4. `[]` Token program. Я не совсем понял, откуда он берется.
     Unstake {
     },
 }

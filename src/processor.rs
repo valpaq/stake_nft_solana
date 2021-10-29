@@ -9,10 +9,12 @@ use solana_program::{
     sysvar::{rent::Rent, Sysvar},
     clock::Clock
 };
+use spl_token::instruction;
+const MONTH: i32 = 60*60*24*365/12; /// 2 628 000
 
 use spl_token::state::Account as TokenAccount;
 
-use crate::{error::StakeError, instruction::StakeInstruction}; /// , state::Escrow};
+use crate::{error::StakeError, instruction::StakeInstruction, state::Stake};
 
 pub struct Processor;
 impl Processor {
@@ -60,33 +62,33 @@ impl Processor {
         let current_clock = Clock::get();
 
         stake_info.is_staked = true;
-        stake_info.date_initialized = current_clock.unix_timestamp;
+        stake_info.date_initialized = *current_clock.unix_timestamp;
         stake_info.author_address = *initializer.key;
         stake_info.nft_address = *nft_token_account.key;
 
         Stake::pack(stake_info, &mut stake_account.try_borrow_mut_data()?)?;
         let (pda, _nonce) = Pubkey::find_program_address(&[b"stake"], program_id);
-/*
+
         let token_program = next_account_info(account_info_iter)?;
-        let owner_change_ix = spl_token::instruction::set_authority(
-            token_program.key,
-            temp_token_account.key,
-            Some(&pda),
-            spl_token::instruction::AuthorityType::AccountOwner,
-            initializer.key,
-            &[&initializer.key],
+        let owner_change_ix = instruction::set_authority(
+            token_program.key, /// token_program_id. Не совсем понимаю что тут должно быть
+            nft_token_account.key, /// owned_pubkey
+            Some(&pda), /// new_authority_pubkey
+            spl_token::instruction::AuthorityType::AccountOwner, ///authority_type
+            initializer.key, /// owner_pubkey
+            &[&initializer.key], /// signer_pubkeys
         )?;
 
-        msg!("Calling the token program to transfer token account ownership...");
+        msg!("Calling the token program to transfer nft account ownership...");
         invoke(
             &owner_change_ix,
             &[
-                temp_token_account.clone(),
+                nft_token_account.clone(),
                 initializer.clone(),
                 token_program.clone(),
             ],
         )?;
-*/
+
 
         Ok(())
     }
@@ -95,7 +97,7 @@ impl Processor {
         accounts: &[AccountInfo],
         program_id: &Pubkey,
     ) -> ProgramResult {
-        
+
     }
 
     
