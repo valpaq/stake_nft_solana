@@ -13,6 +13,7 @@ pub struct Stake {
    pub date_initialized: UnixTimestamp,
    pub author_address: Pubkey,
    pub nft_address: Pubkey,
+   pub associated_account: Pubkey,
 }
 
 impl Sealed for Stake {}
@@ -24,8 +25,8 @@ impl IsInitialized for Stake {
 }
 
 impl Pack for Stake {
-   /// 1 (bool) + 2 * 32 (Pubkey) + 1 * 8 (i64)(timestamp) = 73
-   const LEN: usize = 73; 
+   /// 1 (bool) + 3 * 32 (Pubkey) + 1 * 8 (i64)(timestamp) = 105
+   const LEN: usize = 105; 
    /// У них уже есть реализации, зачем мне менять пока что?
    /// хотя лучше пока добавить, а потом удалить если что
    fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
@@ -35,7 +36,8 @@ impl Pack for Stake {
           date_initialized,
           author_address,
           nft_address,
-      ) = array_refs![src, 1, 8, 32, 32];
+          associated_account,
+      ) = array_refs![src, 1, 8, 32, 32, 32];
       let is_initialized = match is_initialized {
           [0] => false,
           [1] => true,
@@ -47,6 +49,7 @@ impl Pack for Stake {
           date_initialized: i64::from_le_bytes(*date_initialized),
           author_address: Pubkey::new_from_array(*author_address),
           nft_address: Pubkey::new_from_array(*nft_address)
+          associated_account: Pubkey::new_from_array(*associated_account)
       })
   }
 
@@ -57,18 +60,22 @@ impl Pack for Stake {
          date_initialized_dst,
          author_address_dst,
          nft_address_dst,
-     ) = mut_array_refs![dst, 1, 8, 32, 32];
+         associated_account_dst,
+     ) = mut_array_refs![dst, 1, 8, 32, 32, 32];
 
       let Stake {
          is_initialized,
          date_initialized,
          author_address,
          nft_address,
+         associated_account,
       } = self;
 
       is_initialized_dst[0] = *is_initialized as u8;
       author_address_dst.copy_from_slice(author_address.as_ref());
       nft_address_dst.copy_from_slice(nft_address.as_ref());
       *date_initialized_dst = date_initialized.to_le_bytes();
+      associated_account_dst.copy_from_slice(associated_account.as_ref());
+      
   }
 }
