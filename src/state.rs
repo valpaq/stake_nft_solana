@@ -25,7 +25,7 @@ impl IsInitialized for Stake {
 }
 
 impl Pack for Stake {
-   /// 1 (bool) + 3 * 32 (Pubkey) + 1 * 8 (i64)(timestamp) = 105
+   // 1 (bool) + 3 * 32 (Pubkey) + 1 * 8 (i64)(timestamp) = 105
    const LEN: usize = 105; 
    fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
       let src = array_ref![src, 0, Stake::LEN];
@@ -46,13 +46,13 @@ impl Pack for Stake {
           is_initialized,
           date_initialized: i64::from_le_bytes(*date_initialized),
           author_address: Pubkey::new_from_array(*author_address),
-          nft_address: Pubkey::new_from_array(*nft_address)
-          associated_account: Pubkey::new_from_array(*associated_account)
+          nft_address: Pubkey::new_from_array(*nft_address),
+          associated_account: Pubkey::new_from_array(*associated_account),
       })
   }
 
   fn pack_into_slice(&self, dst: &mut [u8]) {
-      let dst = array_mut_ref![dst, 0, Escrow::LEN];
+      let dst = array_mut_ref![dst, 0, Stake::LEN];
       let (
          is_initialized_dst,
          date_initialized_dst,

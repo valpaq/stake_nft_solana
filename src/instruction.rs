@@ -1,7 +1,7 @@
 use solana_program::program_error::ProgramError;
 use std::convert::TryInto;
 
-use crate::error::StakeError::InvalidAddress;
+use crate::error::StakeError::{InvalidAddress, InvalidInstruction};
 
 pub enum StakeInstruction {
     /// Stake NFT by sending it to the account
@@ -29,17 +29,13 @@ pub enum StakeInstruction {
 }
 
 impl StakeInstruction {
-    /// Unpacks a byte buffer into a [EscrowInstruction](enum.EscrowInstruction.html).
+    // Unpacks a byte buffer into a [EscrowInstruction](enum.EscrowInstruction.html).
     pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
         let (tag, rest) = input.split_first().ok_or(InvalidInstruction)?;
 
         Ok(match tag {
-            0 => Self::Stake {
-                amount: Self::unpack_amount(rest)?,
-            },
-            1 => Self::Unstake {
-                amount: Self::unpack_amount(rest)?,
-            },
+            0 => Self::Stake{},
+            1 => Self::Unstake{},
             _ => return Err(InvalidInstruction.into()),
         })
     }

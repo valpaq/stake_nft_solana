@@ -14,7 +14,7 @@ arrayref = "0.3"
 borsh = "0.9"
 solana-program = "1.7.8"
 spl-token = {version = "3.1.1", features = ["no-entrypoint"]}
-spl-associated_token_account="1.0.3"
+spl-associated-token-account="1.0.3"
 
 [features]
 test-bpf = []

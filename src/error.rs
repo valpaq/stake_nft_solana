@@ -16,7 +16,9 @@ pub enum StakeError {
     #[error("Not Initialized Stake")]
     NotInitializedStake,
     #[error("Not Enough Time")]
-    NotEnoughTime
+    NotEnoughTime,
+    #[error("Invalid Instruction")]
+    InvalidInstruction,
 }
 
 impl From<StakeError> for ProgramError {
