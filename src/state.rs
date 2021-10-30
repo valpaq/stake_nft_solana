@@ -27,8 +27,6 @@ impl IsInitialized for Stake {
 impl Pack for Stake {
    /// 1 (bool) + 3 * 32 (Pubkey) + 1 * 8 (i64)(timestamp) = 105
    const LEN: usize = 105; 
-   /// У них уже есть реализации, зачем мне менять пока что?
-   /// хотя лучше пока добавить, а потом удалить если что
    fn unpack_from_slice(src: &[u8]) -> Result<Self, ProgramError> {
       let src = array_ref![src, 0, Stake::LEN];
       let (

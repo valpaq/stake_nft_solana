@@ -46,18 +46,15 @@ impl Processor {
         let initializer = next_account_info(account_info_iter)?; /// who send_transaction
 
         if !initializer.is_signer { 
-            return Err(ProgramError::MissingRequiredSignature); 
+            return Err(StakeError::MissingRequiredSignature); 
         }
 
         let nft_token_account = next_account_info(account_info_iter)?;
-        if *nft_token_account.owner != spl_token::id() {
-            return Err(ProgramError::IncorrectProgramId);
-        }/// вроде проверка на автора nft, но не уверен
 
         let stake_account = next_account_info(account_info_iter)?; 
         let mut stake_info = Staked::unpack_unchecked(&stake_account.try_borrow_data()?)?;
         if stake_info.is_initialized() {
-            return Err(ProgramError::AccountAlreadyInitialized);
+            return Err(StakeError::AccountAlreadyInitialized);
         }
         let current_clock = Clock::get();
 
@@ -143,6 +140,60 @@ impl Processor {
         accounts: &[AccountInfo],
         program_id: &Pubkey,
     ) -> ProgramResult {
+        let account_info_iter = &mut accounts.iter();
+        let initializer = next_account_info(account_info_iter)?;
+
+        if !initializer.is_signer {
+            return Err(StakeError::MissingRequiredSignature);
+        }
+
+        let nft_token_account = next_account_info(account_info_iter)?;
+
+        let stake_account = next_account_info(account_info_iter)?; 
+        let mut stake_info = Staked::unpack(&stake_account.try_borrow_data()?)?;
+        /// pub is_initialized: bool,
+        /// pub date_initialized: UnixTimestamp,
+        /// pub author_address: Pubkey,
+        /// pub nft_address: Pubkey,
+        /// pub associated_account: Pubkey,
+        
+        let current_clock = Clock::get();
+        if !stake_info.is_initialized{
+            return Err(StakeError::NotInitializedStake);
+        }
+        if stake_info.date_initialized + MONTH < *current_clock.unix_timestamp{
+            return Err(StakeError::NotEnoughTime);
+        }
+        if stake_info.author_address != *initializer.key{
+            return Err(StakeError::InvalidAddress);
+        }
+        if stake_info.nft_address != *nft_token_account.key{
+            return Err(StakeError::InvalidAddress);
+        }
+
+        let (pda, nonce) = Pubkey::find_program_address(&[b"stake"], program_id);
+
+        let token_program = next_account_info(account_info_iter)?;
+
+        let transfer_to_giver_ix = spl_token::instruction::transfer(
+            token_program.key,
+            *stake_info.associated_account.key,
+            nft_token_account.key,
+            &pda,
+            &[&pda],
+            1,
+        )?;
+        msg!("Calling the token program to transfer nft to the giver...");
+        invoke_signed(
+            &transfer_to_giver_ix,
+            &[
+                stake_info.associated_account.key.clone(),
+                nft_token_account.clone(),
+                pda_account.clone(), /// не знаю что сюда
+                token_program.clone(),
+            ],
+            &[&[&b"stake"[..], &[nonce]]],
+        )?;
 
     }
 

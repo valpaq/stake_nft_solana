@@ -12,7 +12,7 @@ pub enum StakeInstruction {
     /// 0. `[signer]` The account of the person initializing the stake
     /// 1. `[writable]` NFT address
     /// 2. `[writable]` The escrow account, it will hold all necessary info.
-    /// 3. `[]` Token program. Я не совсем понял, откуда он берется.
+    /// 3. `[]` Token program
     Stake {
     },
     /// Unstake NFT 
@@ -23,26 +23,24 @@ pub enum StakeInstruction {
     /// 0. `[signer]` The account of the person taking the trade
     /// 1. `[writable]` NFT address
     /// 2. `[writable]` The escrow account, it will hold all necessary info.
-    /// 3. `[]` The PDA account
-    /// 4. `[]` Token program. Я не совсем понял, откуда он берется.
+    /// 3. `[]` Token program
     Unstake {
     },
 }
-/*
+
 impl StakeInstruction {
     /// Unpacks a byte buffer into a [EscrowInstruction](enum.EscrowInstruction.html).
     pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
         let (tag, rest) = input.split_first().ok_or(InvalidInstruction)?;
 
         Ok(match tag {
-            0 => Self::InitEscrow {
+            0 => Self::Stake {
                 amount: Self::unpack_amount(rest)?,
             },
-            1 => Self::Exchange {
+            1 => Self::Unstake {
                 amount: Self::unpack_amount(rest)?,
             },
             _ => return Err(InvalidInstruction.into()),
         })
     }
 }
-*/

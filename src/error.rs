@@ -6,7 +6,17 @@ use solana_program::program_error::ProgramError;
 pub enum StakeError {
     /// Invalid Address
     #[error("Invalid Address")]
-    InvalidAddress
+    InvalidAddress,
+    #[error("Incorrect Program Id")]
+    IncorrectProgramId,
+    #[error("Account Already Initialized")]
+    AccountAlreadyInitialized,
+    #[error("Missing Required Signature")]
+    MissingRequiredSignature,
+    #[error("Not Initialized Stake")]
+    NotInitializedStake,
+    #[error("Not Enough Time")]
+    NotEnoughTime
 }
 
 impl From<StakeError> for ProgramError {
