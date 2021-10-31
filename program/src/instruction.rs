@@ -15,8 +15,7 @@ pub enum StakeInstruction {
     /// 4. `[writable]` PDA account
     /// 5. `[]` System Program
     /// 6. `[]` Rent sysvar
-    /// 7. `[]` SPL Token program
-    /// 8. `[]` Token program
+    /// 7. `[]` Token program
     Stake {
     },
     /// Unstake NFT 
@@ -24,10 +23,13 @@ pub enum StakeInstruction {
     ///
     /// Accounts expected:
     ///
-    /// 0. `[signer]` The account of the person taking the trade
-    /// 1. `[writable]` NFT address
+    /// 0. `[signer]` The account of the person initializing the stake
+    /// 1. `[writable]` NFT mint account
+    /// 2. `[writable]` NFT token account
     /// 2. `[writable]` The stake account, it will hold all necessary info.
-    /// 3. `[]` Token program
+    /// 3. `[writable]` Associated token account
+    /// 4. `[writable]` PDA account
+    /// 5. `[]` Token program
     Unstake {
     },
 }
@@ -35,7 +37,7 @@ pub enum StakeInstruction {
 impl StakeInstruction {
     // Unpacks a byte buffer into a [EscrowInstruction](enum.EscrowInstruction.html).
     pub fn unpack(input: &[u8]) -> Result<Self, ProgramError> {
-        let (tag, rest) = input.split_first().ok_or(InvalidInstruction)?;
+        let (tag, _rest) = input.split_first().ok_or(InvalidInstruction)?;
 
         Ok(match tag {
             0 => Self::Stake{},
