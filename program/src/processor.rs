@@ -6,14 +6,13 @@ use solana_program::{
     program_error::ProgramError,
     program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
-    sysvar::{rent::Rent, Sysvar},
+    sysvar::{Sysvar},
     clock::Clock
 };
 use spl_associated_token_account::{
-    create_associated_token_account, get_associated_token_address};
+    create_associated_token_account};
 const MONTH: i64 = 60*60*24*365/12; // 2 628 000
 
-use spl_token::state::Account as TokenAccount;
 
 use crate::{error::StakeError, instruction::StakeInstruction, state::Stake};
 
@@ -56,7 +55,14 @@ impl Processor {
         if stake_info.is_initialized() {
             return Err(ProgramError::AccountAlreadyInitialized);
         }
-        let current_clock = Clock::get().unwrap();
+        let current_clock = Clock::get();
+
+        let current_clock = match current_clock {
+            Ok(clock) => clock,
+            Err(error) => panic!("Problem with clock: {:}", error),
+        };
+
+
 
         let (pda, _nonce) = Pubkey::find_program_address(&[b"stake"], program_id);
 
@@ -75,15 +81,15 @@ impl Processor {
 
         let associated_account_ix = create_associated_token_account(
             initializer.key, // не уверен
+            nft_token_account.key,
 
-            nft_token_account.key
         );
 
         stake_info.is_initialized = true;
-        stake_info.date_initialized = *current_clock.unix_timestamp;
+        stake_info.date_initialized = current_clock.unix_timestamp;
         stake_info.author_address = *initializer.key;
         stake_info.nft_address = *nft_token_account.key;
-        stake_info.associated_account = associated_account;
+        stake_info.associated_account = *associated_account.key;
 
         Stake::pack(stake_info, &mut stake_account.try_borrow_mut_data()?)?;
         // pub fn transfer(
@@ -159,17 +165,22 @@ impl Processor {
         // pub associated_account: Pubkey,
         
         let current_clock = Clock::get();
+        let current_clock = match current_clock {
+            Ok(clock) => clock,
+            Err(error) => panic!("Problem with clock: {:}", error),
+        };
+
         if !stake_info.is_initialized{
             return Err(StakeError::NotInitializedStake.into());
         }
-        if stake_info.date_initialized + MONTH < *current_clock.unix_timestamp{
+        if stake_info.date_initialized + MONTH < current_clock.unix_timestamp{
             return Err(StakeError::NotEnoughTime.into());
         }
         if stake_info.author_address != *initializer.key{
-            return Err(StakeError::InvalidAddress);
+            return Err(StakeError::InvalidAddress.into());
         }
         if stake_info.nft_address != *nft_token_account.key{
-            return Err(StakeError::InvalidAddress);
+            return Err(StakeError::InvalidAddress.into());
         }
 
         let (pda, nonce) = Pubkey::find_program_address(&[b"stake"], program_id);
@@ -178,7 +189,7 @@ impl Processor {
 
         let transfer_to_giver_ix = spl_token::instruction::transfer(
             token_program.key,
-            stake_info.associated_account,
+            &stake_info.associated_account,
             nft_token_account.key,
             &pda,
             &[&pda],

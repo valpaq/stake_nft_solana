@@ -1,7 +1,5 @@
 use solana_program::program_error::ProgramError;
-use std::convert::TryInto;
-
-use crate::error::StakeError::{InvalidAddress, InvalidInstruction};
+use crate::error::StakeError::{InvalidInstruction};
 
 pub enum StakeInstruction {
     /// Stake NFT by sending it to the account
