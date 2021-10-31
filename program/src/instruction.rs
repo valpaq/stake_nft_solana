@@ -8,9 +8,15 @@ pub enum StakeInstruction {
     /// Accounts expected:
     ///
     /// 0. `[signer]` The account of the person initializing the stake
-    /// 1. `[writable]` NFT address
-    /// 2. `[writable]` The escrow account, it will hold all necessary info.
-    /// 3. `[]` Token program
+    /// 1. `[writable]` NFT mint account
+    /// 2. `[writable]` NFT token account
+    /// 2. `[writable]` The stake account, it will hold all necessary info.
+    /// 3. `[writable]` Associated token account
+    /// 4. `[writable]` PDA account
+    /// 5. `[]` System Program
+    /// 6. `[]` Rent sysvar
+    /// 7. `[]` SPL Token program
+    /// 8. `[]` Token program
     Stake {
     },
     /// Unstake NFT 
@@ -20,7 +26,7 @@ pub enum StakeInstruction {
     ///
     /// 0. `[signer]` The account of the person taking the trade
     /// 1. `[writable]` NFT address
-    /// 2. `[writable]` The escrow account, it will hold all necessary info.
+    /// 2. `[writable]` The stake account, it will hold all necessary info.
     /// 3. `[]` Token program
     Unstake {
     },

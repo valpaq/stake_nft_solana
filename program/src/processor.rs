@@ -10,7 +10,7 @@ use solana_program::{
     clock::Clock
 };
 use spl_associated_token_account::{
-    create_associated_token_account};
+    create_associated_token_account, get_associated_token_address};
 const MONTH: i64 = 60*60*24*365/12; // 2 628 000
 
 
@@ -43,14 +43,20 @@ impl Processor {
     ) -> ProgramResult {
         let account_info_iter = &mut accounts.iter();
         let initializer = next_account_info(account_info_iter)?; // who send_transaction
+        let nft_mint_account = next_account_info(account_info_iter)?;
+        let nft_token_account = next_account_info(account_info_iter)?;
+        let stake_account = next_account_info(account_info_iter)?; 
+        let associated_token_account = next_account_info(account_info_iter)?;
+        let pda_account = next_account_info(account_info_iter)?;
+        let system_program = next_account_info(account_info_iter)?;
+        let rent_sysvar = next_account_info(account_info_iter)?; 
+        let token_program = next_account_info(account_info_iter)?;
 
         if !initializer.is_signer { 
             return Err(ProgramError::MissingRequiredSignature); 
         }
 
-        let nft_token_account = next_account_info(account_info_iter)?;
 
-        let stake_account = next_account_info(account_info_iter)?; 
         let mut stake_info = Stake::unpack_unchecked(&stake_account.try_borrow_data()?)?;
         if stake_info.is_initialized() {
             return Err(ProgramError::AccountAlreadyInitialized);
@@ -66,7 +72,9 @@ impl Processor {
 
         let (pda, _nonce) = Pubkey::find_program_address(&[b"stake"], program_id);
 
-        let token_program = next_account_info(account_info_iter)?;
+        if *pda_account.key != pda{
+            return Err(ProgramError::InvalidAccountData);
+        }
  
         // pub fn create_associated_token_account(
         //    funding_address: &Pubkey, 
@@ -75,21 +83,52 @@ impl Processor {
         // ) -> Instruction
 
         // pub fn get_associated_token_address(
-        //    wallet_address: &Pubkey, 
-        //    spl_token_mint_address: &Pubkey
-        // ) -> Pubkey
+        //     wallet_address: &Pubkey, 
+        //     spl_token_mint_address: &Pubkey
+        //  ) -> Pubkey
+
+        let associated_token_address = get_associated_token_address(
+            &pda_account.key, 
+            &nft_mint_account.key,
+        );
+
+        if associated_token_address != *associated_token_account.key{
+            return Err(ProgramError::InvalidAccountData);
+        }
+                
 
         let associated_account_ix = create_associated_token_account(
-            initializer.key, // не уверен
-            nft_token_account.key,
-
+            &initializer.key, // funding - платит за транзакцию - пользователя
+            &pda, // для кого(нас)
+            &nft_mint_account.key
         );
+        // [writeable,signer] Funding account (must be a system account)
+        // [writeable] Associated token account address to be created
+        // [] Wallet address for the new associated token account
+        // [] The token mint for the new associated token account
+        // [] System program
+        // [] SPL Token program
+        // [] Rent sysvar
+
+        invoke(
+            &associated_account_ix,
+            &[
+                initializer.clone(),
+                associated_token_account.clone(),
+                pda_account.clone(),
+                nft_mint_account.clone(),
+                system_program.clone(),
+                token_program.clone(),
+                rent_sysvar.clone()
+            ]
+        );
+
 
         stake_info.is_initialized = true;
         stake_info.date_initialized = current_clock.unix_timestamp;
         stake_info.author_address = *initializer.key;
         stake_info.nft_address = *nft_token_account.key;
-        stake_info.associated_account = *associated_account.key;
+        stake_info.associated_account = associated_token_address;
 
         Stake::pack(stake_info, &mut stake_account.try_borrow_mut_data()?)?;
         // pub fn transfer(
@@ -101,47 +140,38 @@ impl Processor {
         //    amount: u64
         // ) -> Result<Instruction, ProgramError>
 
-        let owner_change_ix = spl_token::instruction::set_authority(
-            token_program.key, // token_program_id. Не совсем понимаю что тут должно быть
-            nft_token_account.key, // owned_pubkey
-            Some(&pda), // new_authority_pubkey
-            spl_token::instruction::AuthorityType::AccountOwner, //authority_type
-            initializer.key, // owner_pubkey
-            &[&initializer.key] // signer_pubkeys
-        )?;
+        let associated_initializer_token_account = get_associated_token_address(
+            initializer.key, 
+            &nft_mint_account.key,
+        );
 
-        msg!("Calling the token program to transfer nft account ownership...");
+        if associated_initializer_token_account != *nft_token_account.key{
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        
+        let transfer_to_assoc_ix = spl_token::instruction::transfer(
+            token_program.key,
+            nft_token_account.key,
+            &associated_token_address,
+            &initializer.key,
+            &[&initializer.key],
+            1
+        )?;
+        msg!("Calling the token program to transfer tokens to the nft");
         invoke(
-            &owner_change_ix,
+            &transfer_to_assoc_ix,
             &[
                 nft_token_account.clone(),
+                associated_token_account.clone(),
                 initializer.clone(),
                 token_program.clone(),
             ],
         )?;
 
-        let transfer_to_assoc_ix = spl_token::instruction::transfer(
-            token_program.key,
-            nft_token_account.key,
-            &associated_account,
-            &pda,
-            &[&pda],
-            1
-        )?;
-        msg!("Calling the token program to transfer tokens to the nft");
-        invoke_signed(
-            &transfer_to_assoc_ix,
-            &[
-                nft_token_account.clone(),
-                associated_account.clone(),
-                pda.clone(),
-                token_program.clone(),
-            ],
-            &[&[&b"stake"[..], &[_nonce]]],
-        )?;
-
         Ok(())
     }
+/*
 
     fn unstake(
         accounts: &[AccountInfo],
@@ -210,6 +240,6 @@ impl Processor {
         Ok(())
 
     }
-
+*/
     
 }
