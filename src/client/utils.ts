@@ -20,38 +20,22 @@ import * as simple from "./simple_utils";
  */
 let connection: Connection;
 
-/**
- * Keypair associated to the fees' payer
- */
-let payer: Keypair;
 
-/**
- * Hello world's program id
- */
-let programId: PublicKey;
+let initializer: Keypair 
+let nft_mint_account: Keypair
+let nft_token_account: Keypair
+let stake_account: Keypair 
+let associated_token_account: Keypair
+let pda_account: Keypair
+let system_program: Keypair
+let rent_sysvar: Keypair 
+let token_program: Keypair
 
-/**
- * The public key of the account we are saying hello to
- */
-let greetedPubkey: PublicKey;
 
-/**
- * Path to program files
- */
 const PROGRAM_PATH = path.resolve(__dirname, '../../dist/program');
 
-/**
- * Path to program shared object file which should be deployed on chain.
- * This file is created when running either:
- *   - `npm run build:program-c`
- *   - `npm run build:program-rust`
- */
 const PROGRAM_SO_PATH = path.join(PROGRAM_PATH, 'staking_program.so');
 
-/**
- * Path to the keypair of the deployed program.
- * This file is created when running `solana program deploy dist/program/helloworld.so`
- */
 const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'staking_program-keypair.json');
 
 /**
@@ -67,25 +51,15 @@ class GreetingAccount {
 }
 
 /**
- * Borsh schema definition for greeting accounts
- */
-const GreetingSchema = new Map([
-  [GreetingAccount, {kind: 'struct', fields: [['counter', 'u32']]}],
-]);
-
-/**
  * The expected size of each greeting account.
  */
-const GREETING_SIZE = borsh.serialize(
-  GreetingSchema,
-  new GreetingAccount(),
-).length;
+const GREETING_SIZE = 105;
 
 /**
  * Establish a connection to the cluster
  */
 export async function establishConnection(): Promise<void> {
-  const rpcUrl = await getRpcUrl();
+  const rpcUrl = await simple.getRpcUrl();
   connection = new Connection(rpcUrl, 'confirmed');
   const version = await connection.getVersion();
   console.log('Connection to cluster established:', rpcUrl, version);
@@ -207,27 +181,6 @@ export async function sayHello(): Promise<void> {
     connection,
     new Transaction().add(instruction),
     [payer],
-  );
-}
-
-/**
- * Report the number of times the greeted account has been said hello to
- */
-export async function reportGreetings(): Promise<void> {
-  const accountInfo = await connection.getAccountInfo(greetedPubkey);
-  if (accountInfo === null) {
-    throw 'Error: cannot find the greeted account';
-  }
-  const greeting = borsh.deserialize(
-    GreetingSchema,
-    GreetingAccount,
-    accountInfo.data,
-  );
-  console.log(
-    greetedPubkey.toBase58(),
-    'has been greeted',
-    greeting.counter,
-    'time(s)',
   );
 }
 
