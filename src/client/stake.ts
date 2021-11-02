@@ -1,7 +1,8 @@
  import {
     establishConnection,
-    establishNftNAuthor,
+    establishInitializer,
     getAllOtherAccounts,
+    checkProgram,
     stake
   } from './utils';
 
@@ -13,10 +14,12 @@
     await establishConnection();
   
     // Determine author and NFT
-    await establishNftNAuthor();
+    await establishInitializer();
   
     // Get many other accounts
     await getAllOtherAccounts();
+
+    await checkProgram()
   
     // stake NFT
     await stake();

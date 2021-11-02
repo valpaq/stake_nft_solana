@@ -10,50 +10,34 @@ import {
   Transaction,
   sendAndConfirmTransaction,
 } from '@solana/web3.js';
+import {TOKEN_PROGRAM_ID} from "@solana/spl-token";
 import fs from 'mz/fs';
 import path from 'path';
 import * as simple from "./simple_utils";
 
 
-/**
- * Connection to the network
- */
 let connection: Connection;
 
 
-let initializer: Keypair 
-let nft_mint_account: Keypair
-let nft_token_account: Keypair
-let stake_account: Keypair 
-let associated_token_account: Keypair
-let pda_account: Keypair
-let system_program: Keypair
-let rent_sysvar: Keypair 
-let token_program: Keypair
+let initializer: Keypair ;
+let nft_mint_account: Keypair;
+let nft_token_account: Keypair;
+let stake_account: Keypair; 
+let associated_token_account: Keypair;
+let pda_account: PublicKey;
+let system_program: Keypair;
+let rent_sysvar: Keypair; 
+let token_program = TOKEN_PROGRAM_ID;
+let programId: any;
+let nonce: Number;
 
-
+const STAKE_SEED = 'stake';
+const STAKE_SIZE = 105;
 const PROGRAM_PATH = path.resolve(__dirname, '../../dist/program');
 
 const PROGRAM_SO_PATH = path.join(PROGRAM_PATH, 'staking_program.so');
 
 const PROGRAM_KEYPAIR_PATH = path.join(PROGRAM_PATH, 'staking_program-keypair.json');
-
-/**
- * The state of a greeting account managed by the hello world program
- */
-class GreetingAccount {
-  counter = 0;
-  constructor(fields: {counter: number} | undefined = undefined) {
-    if (fields) {
-      this.counter = fields.counter;
-    }
-  }
-}
-
-/**
- * The expected size of each greeting account.
- */
-const GREETING_SIZE = 105;
 
 /**
  * Establish a connection to the cluster
@@ -65,50 +49,35 @@ export async function establishConnection(): Promise<void> {
   console.log('Connection to cluster established:', rpcUrl, version);
 }
 
-/**
- * Establish an account to pay for everything
- */
-export async function establishNftNAuthor(): Promise<void> {
+export async function establishInitializer(): Promise<void> {
   let fees = 0;
-  if (!payer) {
-    const {feeCalculator} = await connection.getRecentBlockhash();
+  const {feeCalculator} = await connection.getRecentBlockhash();
 
-    // Calculate the cost to fund the greeter account
-    fees += await connection.getMinimumBalanceForRentExemption(GREETING_SIZE);
+  // Calculate the cost to fund the greeter account
+  fees += await connection.getMinimumBalanceForRentExemption(STAKE_SIZE);
 
-    // Calculate the cost of sending transactions
-    fees += feeCalculator.lamportsPerSignature * 100; // wag
+  // Calculate the cost of sending transactions
+  fees += feeCalculator.lamportsPerSignature * 100; // wag
 
-    payer = await getPayer();
-  }
+  initializer = await simple.createKeypairFromFile("initializer");
 
-  let lamports = await connection.getBalance(payer.publicKey);
+  let lamports = await connection.getBalance(initializer.publicKey);
   if (lamports < fees) {
     // If current balance is not enough to pay for fees, request an airdrop
     const sig = await connection.requestAirdrop(
-      payer.publicKey,
-      fees - lamports,
+      initializer.publicKey,
+      fees * 20,
     );
     await connection.confirmTransaction(sig);
-    lamports = await connection.getBalance(payer.publicKey);
+    lamports = await connection.getBalance(initializer.publicKey);
   }
 
-  console.log(
-    'Using account',
-    payer.publicKey.toBase58(),
-    'containing',
-    lamports / LAMPORTS_PER_SOL,
-    'SOL to pay for fees',
-  );
 }
 
-/**
- * Check if the hello world BPF program has been deployed
- */
 export async function checkProgram(): Promise<void> {
   // Read program id from keypair file
   try {
-    const programKeypair = await createKeypairFromFile(PROGRAM_KEYPAIR_PATH);
+    const programKeypair = await simple.createKeypairFromFile(PROGRAM_KEYPAIR_PATH);
     programId = programKeypair.publicKey;
   } catch (err) {
     const errMsg = (err as Error).message;
@@ -131,14 +100,19 @@ export async function checkProgram(): Promise<void> {
     throw new Error(`Program is not executable`);
   }
   console.log(`Using program ${programId.toBase58()}`);
+}
 
-  // Derive the address (public key) of a greeting account from the program so that it's easy to find later.
-  const GREETING_SEED = 'hello';
-  greetedPubkey = await PublicKey.createWithSeed(
-    payer.publicKey,
-    GREETING_SEED,
-    programId,
+export async function getAllOtherAccounts(): Promise<void>{
+  [pda_account, nonce] = await PublicKey.findProgramAddress(
+    [Buffer.from(STAKE_SEED)],
+    programId
   );
+  nft_mint_account = await simple.createKeypairFromSFile("nft_mint_account");;
+  nft_token_account = await simple.createKeypairFromSFile("nft_token_account");;
+  stake_account = await simple.createKeypairFromSFile("stake_account");; 
+  associated_token_account = await simple.createKeypairFromSFile("associated_token_account");;
+  system_program = await simple.createKeypairFromSFile("system_program");;
+  rent_sysvar = await simple.createKeypairFromSFile("rent_sysvar");; 
 
   // Check if the greeting account has already been created
   const greetedAccount = await connection.getAccountInfo(greetedPubkey);
@@ -149,14 +123,14 @@ export async function checkProgram(): Promise<void> {
       'to say hello to',
     );
     const lamports = await connection.getMinimumBalanceForRentExemption(
-      GREETING_SIZE,
+      STAKE_SIZE,
     );
 
     const transaction = new Transaction().add(
       SystemProgram.createAccountWithSeed({
-        fromPubkey: payer.publicKey,
-        basePubkey: payer.publicKey,
-        seed: GREETING_SEED,
+        fromPubkey: initializer.publicKey,
+        basePubkey: initializer.publicKey,
+        seed: STAKE_SEED,
         newAccountPubkey: greetedPubkey,
         lamports,
         space: GREETING_SIZE,
@@ -170,7 +144,7 @@ export async function checkProgram(): Promise<void> {
 /**
  * Say hello
  */
-export async function sayHello(): Promise<void> {
+export async function stake(): Promise<void> {
   console.log('Saying hello to', greetedPubkey.toBase58());
   const instruction = new TransactionInstruction({
     keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
