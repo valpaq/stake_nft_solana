@@ -10,18 +10,19 @@
   async function main() {
     console.log("Let's stake an nft");
   
-    // Establish connection to the cluster
     await establishConnection();
+    
+    console.log("connection");
   
-    // Determine author and NFT
     await establishInitializer();
+    console.log("initializer");
+    
+    await checkProgram();
+    console.log("program");
   
-    // Get many other accounts
     await getAllOtherAccounts();
+    console.log("other");
 
-    await checkProgram()
-  
-    // stake NFT
     await stake();
   
     console.log('Success');

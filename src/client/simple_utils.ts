@@ -43,7 +43,7 @@ export async function getRpcUrl(): Promise<string> {
 export async function createKeypairFromSFile(
   filePath: string,
 ): Promise<Keypair> {
-  const secretKeyString = await fs.readFile(`./keys/${filePath}_priv.json`, {encoding: 'utf8'});
+  const secretKeyString = await fs.readFile(`./src/client/keys/${filePath}_priv.json`, {encoding: 'utf8'});
   const secretKey = Uint8Array.from(JSON.parse(secretKeyString));
   return Keypair.fromSecretKey(secretKey);
 }

@@ -20,14 +20,14 @@ let connection: Connection;
 
 
 let initializer: Keypair ;
-let nft_mint_account: Keypair;
-let nft_token_account: Keypair;
-let stake_account: Keypair; 
-let associated_token_account: Keypair;
+let nftMintAccount: Keypair;
+let nftTokenAccount: Keypair;
+let stakeAccount: any; 
+let associatedTokenAccount: Keypair;
 let pda_account: PublicKey;
-let system_program: Keypair;
-let rent_sysvar: Keypair; 
-let token_program = TOKEN_PROGRAM_ID;
+let systemProgram: Keypair;
+let rentSysvar: Keypair; 
+let stakePubkey: PublicKey;
 let programId: any;
 let nonce: Number;
 
@@ -58,9 +58,7 @@ export async function establishInitializer(): Promise<void> {
 
   // Calculate the cost of sending transactions
   fees += feeCalculator.lamportsPerSignature * 100; // wag
-
-  initializer = await simple.createKeypairFromFile("initializer");
-
+  initializer = await simple.createKeypairFromSFile("initializer");
   let lamports = await connection.getBalance(initializer.publicKey);
   if (lamports < fees) {
     // If current balance is not enough to pay for fees, request an airdrop
@@ -104,60 +102,91 @@ export async function checkProgram(): Promise<void> {
 
 export async function getAllOtherAccounts(): Promise<void>{
   [pda_account, nonce] = await PublicKey.findProgramAddress(
-    [Buffer.from(STAKE_SEED)],
+    [Buffer.from('stake')],
     programId
   );
-  nft_mint_account = await simple.createKeypairFromSFile("nft_mint_account");;
-  nft_token_account = await simple.createKeypairFromSFile("nft_token_account");;
-  stake_account = await simple.createKeypairFromSFile("stake_account");; 
-  associated_token_account = await simple.createKeypairFromSFile("associated_token_account");;
-  system_program = await simple.createKeypairFromSFile("system_program");;
-  rent_sysvar = await simple.createKeypairFromSFile("rent_sysvar");; 
+  nftMintAccount = await simple.createKeypairFromSFile("nft_mint_account");
+  nftTokenAccount = await simple.createKeypairFromSFile("nft_token_account");
+  associatedTokenAccount = await simple.createKeypairFromSFile("associated_token_account");
+  systemProgram = await simple.createKeypairFromSFile("system_program");
+  rentSysvar = await simple.createKeypairFromSFile("rent_sysvar");
+
 
   // Check if the greeting account has already been created
-  const greetedAccount = await connection.getAccountInfo(greetedPubkey);
-  if (greetedAccount === null) {
+  stakePubkey = await PublicKey.createWithSeed(
+    initializer.publicKey,
+    STAKE_SEED,
+    programId,
+  );
+  stakeAccount = await connection.getAccountInfo(stakePubkey);
+  if (stakeAccount === null) {
     console.log(
       'Creating account',
-      greetedPubkey.toBase58(),
-      'to say hello to',
+      stakePubkey.toBase58(),
+      'to say stake',
     );
     const lamports = await connection.getMinimumBalanceForRentExemption(
       STAKE_SIZE,
     );
-
     const transaction = new Transaction().add(
       SystemProgram.createAccountWithSeed({
         fromPubkey: initializer.publicKey,
         basePubkey: initializer.publicKey,
         seed: STAKE_SEED,
-        newAccountPubkey: greetedPubkey,
+        newAccountPubkey: stakePubkey,
         lamports,
         space: STAKE_SIZE,
         programId,
       }),
     );
-    await sendAndConfirmTransaction(connection, transaction, [payer]);
+
+    await sendAndConfirmTransaction(connection, transaction, [initializer]);
   }
 }
 
-/**
- * Say hello
- */
 export async function stake(): Promise<void> {
-  console.log('Saying hello to', greetedPubkey.toBase58());
-  const instruction = new TransactionInstruction({
-    keys: [{pubkey: greetedPubkey, isSigner: false, isWritable: true}],
-    programId,
-    data: Buffer.alloc(0), // All instructions are hellos
+  const stakeInstruction = new TransactionInstruction({
+    programId: programId,
+    data: Buffer.alloc(0),
+    keys: [
+      { pubkey: initializer.publicKey, isSigner: true, isWritable: false },
+      { pubkey: nftMintAccount.publicKey, isSigner: false, isWritable: true },
+      { pubkey: nftTokenAccount.publicKey, isSigner: false, isWritable: true },
+      { pubkey: stakePubkey, isSigner: false, isWritable: true },
+      { pubkey: associatedTokenAccount.publicKey, isSigner: false, isWritable: true },
+      { pubkey: pda_account, isSigner: false, isWritable: true },
+      { pubkey: systemProgram.publicKey, isSigner: false, isWritable: false },
+      { pubkey: rentSysvar.publicKey, isSigner: false, isWritable: false },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
+    ],
   });
-  await sendAndConfirmTransaction(
-    connection,
-    new Transaction().add(instruction),
-    [payer],
+
+  await connection.sendTransaction(
+    new Transaction().add(stakeInstruction),
+    [initializer],
+    { skipPreflight: false, preflightCommitment: "confirmed" }
   );
+  
 }
 
-export function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+export async function unstake(): Promise<void> {
+  const stakeInstruction = new TransactionInstruction({
+    programId: programId,
+    data: Buffer.alloc(0),
+    keys: [
+      { pubkey: initializer.publicKey, isSigner: true, isWritable: false },
+      { pubkey: nftMintAccount.publicKey, isSigner: false, isWritable: true },
+      { pubkey: nftTokenAccount.publicKey, isSigner: false, isWritable: true },
+      { pubkey: stakeAccount, isSigner: false, isWritable: true },
+      { pubkey: associatedTokenAccount.publicKey, isSigner: false, isWritable: true },
+      { pubkey: pda_account, isSigner: false, isWritable: true },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
+    ],
+  });
+
+  await connection.sendTransaction(
+    new Transaction().add(stakeInstruction),
+    [initializer],
+    { skipPreflight: false, preflightCommitment: "confirmed" }
+  );
 }

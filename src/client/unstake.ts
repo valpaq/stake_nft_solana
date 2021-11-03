@@ -1,41 +1,36 @@
 import {
-    establishConnection,
-    establishInitializer,
-    getAllOtherAccounts,
-    unstake,
-    sleep
-  } from './utils';
+  establishConnection,
+  establishInitializer,
+  getAllOtherAccounts,
+  checkProgram,
+  unstake
+} from './utils';
 
-  
-  async function main() {
-    console.log("Let's stake an nft");
-  
-    // Establish connection to the cluster
-    await establishConnection();
-  
-    // Determine author and NFT
-    await establishInitializer();
-  
-    // Get many other accounts
-    await getAllOtherAccounts();
-  
-    // unstake NFT
-    await unstake();
 
-    // wait for 40 sec
-    await sleep(40000);
-    
-    // unstake NFT
-    await unstake();
-  
-    console.log('Success');
-  }
-  
-  main().then(
-    () => process.exit(),
-    err => {
-      console.error(err);
-      process.exit(-1);
-    },
-  );
-  
+async function main() {
+  console.log("Let's unstake an nft");
+
+  await establishConnection();
+  console.log("connection");
+
+  await establishInitializer();
+  console.log("connection");
+
+  await checkProgram();
+  console.log("program");
+
+  await getAllOtherAccounts();
+  console.log("otherAccounts");
+
+  await unstake();
+
+  console.log('Success');
+}
+
+main().then(
+  () => process.exit(),
+  err => {
+    console.error(err);
+    process.exit(-1);
+  },
+);

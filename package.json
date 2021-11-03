@@ -9,11 +9,13 @@
   "author": "",
   "license": "MIT",
   "scripts": {
+    "build": "cargo build-bpf --manifest-path=./src/program/Cargo.toml --bpf-out-dir=dist/program",
+    "setup-validator": "solana-test-validator -r --mint Q5Kqk3vroFenJN3T9T123dXttJvrj2wTGYGnfKv4Kmo --bpf-program HJADWWaVRe1VsiNmJ4mYTS7nDvgKTu35oU7Wswmd1zu1 /home/viktor/rustec/nft_solana/dist/program/staking_program.so",
+    "get-sol": "solana airdrop 100",
+    "deploy": "solana program deploy /home/viktor/rustec/nft_solana/dist/program/staking_program.so",
     "mint": "ts-node src/client/mint.ts",
     "stake": "ts-node src/client/stake.ts",
-    "unstake": "ts-node src/client/unstake.ts",
-    "setup-validator": "solana-test-validator -r --mint Q5Kqk3vroFenJN3T9T123dXttJvrj2wTGYGnfKv4Kmo --bpf-program HJADWWaVRe1VsiNmJ4mYTS7nDvgKTu35oU7Wswmd1zu1 /home/viktor/rustec/nft_solana/dist/program/staking_program.so",
-    "build": "cargo build-bpf --manifest-path=./src/program/Cargo.toml --bpf-out-dir=dist/program"
+    "unstake": "ts-node src/client/unstake.ts"
   },
   "dependencies": {
     "@solana/spl-token": "^0.1.8",
