@@ -133,7 +133,7 @@ export async function getAllOtherAccounts(): Promise<void>{
         seed: STAKE_SEED,
         newAccountPubkey: greetedPubkey,
         lamports,
-        space: GREETING_SIZE,
+        space: STAKE_SIZE,
         programId,
       }),
     );
@@ -158,6 +158,6 @@ export async function stake(): Promise<void> {
   );
 }
 
-function sleep(ms) {
+export function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }

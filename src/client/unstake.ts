@@ -1,6 +1,6 @@
 import {
     establishConnection,
-    establishNftNAuthor,
+    establishInitializer,
     getAllOtherAccounts,
     unstake,
     sleep
@@ -14,7 +14,7 @@ import {
     await establishConnection();
   
     // Determine author and NFT
-    await establishNftNAuthor();
+    await establishInitializer();
   
     // Get many other accounts
     await getAllOtherAccounts();
@@ -23,7 +23,10 @@ import {
     await unstake();
 
     // wait for 40 sec
-    await sleep(2000);
+    await sleep(40000);
+    
+    // unstake NFT
+    await unstake();
   
     console.log('Success');
   }

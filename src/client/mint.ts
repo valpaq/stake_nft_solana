@@ -41,13 +41,13 @@ import {
   
     console.log(`Creating Alice TokenAccount for ${name}...`);
     const CustomertokenAccount = await mint.createAccount(CustomerPublicKey);
-    writePublicKey(CustomertokenAccount, `alice_${name.toLowerCase()}`);
+    writePublicKey(CustomertokenAccount, `customer_${name.toLowerCase()}`);
   
     return [mint, CustomertokenAccount];
   };
   
   const setup = async () => {
-    const CustomerPublicKey = getPublicKey("customer");
+    const CustomerPublicKey = getPublicKey("initializer");
     const clientKeypair = getKeypair("id");
   
     const connection = new Connection("http://localhost:8899", "confirmed");

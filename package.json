@@ -9,9 +9,10 @@
   "author": "",
   "license": "MIT",
   "scripts": {
-    "stake": "ts-node src/client/main.ts",
+    "mint": "ts-node src/client/mint.ts",
+    "stake": "ts-node src/client/stake.ts",
     "unstake": "ts-node src/client/unstake.ts",
-    "start-with-test-validator": "start-server-and-test 'solana-test-validator --reset --quiet' http://localhost:8899/health start",
+    "setup-validator": "solana-test-validator -r --mint Q5Kqk3vroFenJN3T9T123dXttJvrj2wTGYGnfKv4Kmo --bpf-program HJADWWaVRe1VsiNmJ4mYTS7nDvgKTu35oU7Wswmd1zu1 /home/viktor/rustec/nft_solana/dist/program/staking_program.so",
     "build": "cargo build-bpf --manifest-path=./src/program/Cargo.toml --bpf-out-dir=dist/program"
   },
   "dependencies": {
