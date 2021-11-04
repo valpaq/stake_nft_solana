@@ -12,7 +12,7 @@ use solana_program::{
 use borsh::{BorshDeserialize, BorshSerialize};
 use spl_associated_token_account::{
     create_associated_token_account, get_associated_token_address};
-const MONTH: i64 = 60*60*24*365/12*; // 2 628 000
+const MONTH: i64 = 60*60*24*365/12; // 2 628 000
 
 
 use crate::{error::StakeError, instruction::StakeInstruction, state::Stake};
