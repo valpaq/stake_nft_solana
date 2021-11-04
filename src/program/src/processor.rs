@@ -2,7 +2,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
-    program::{invoke},
+    program::{invoke, invoke_signed},
     program_error::ProgramError,
     program_pack::{IsInitialized, Pack},
     pubkey::Pubkey,
@@ -12,7 +12,7 @@ use solana_program::{
 use borsh::{BorshDeserialize, BorshSerialize};
 use spl_associated_token_account::{
     create_associated_token_account, get_associated_token_address};
-const MONTH: i64 = 60*60*24*365/12; // 2 628 000
+const MONTH: i64 = 60*60*24*365/12*; // 2 628 000
 
 
 use crate::{error::StakeError, instruction::StakeInstruction, state::Stake};
@@ -30,7 +30,7 @@ impl Processor {
             StakeInstruction::Stake {} => {
                 msg!("Instruction: Stake");
                 Self::stake(accounts, program_id)
-            }
+            },
             StakeInstruction::Unstake {} => {
                 msg!("Instruction: Unstake");
                 Self::unstake(accounts, program_id)
@@ -52,39 +52,23 @@ impl Processor {
         let system_program = next_account_info(account_info_iter)?;
         let rent_sysvar = next_account_info(account_info_iter)?; 
         let token_program = next_account_info(account_info_iter)?;
-
+        let associated_token_program = next_account_info(account_info_iter)?;
+        let clock_account_info = next_account_info(account_info_iter)?;
+        
         if !initializer.is_signer { 
             return Err(ProgramError::MissingRequiredSignature); 
         }
-
 
         let mut stake_info = Stake::unpack_unchecked(&stake_account.try_borrow_data()?)?;
         if stake_info.is_initialized() {
             return Err(ProgramError::AccountAlreadyInitialized);
         }
-        let current_clock = Clock::get();
-
-        let current_clock = match current_clock {
-            Ok(clock) => clock,
-            Err(error) => panic!("Problem with clock: {:}", error),
-        };
 
         let (pda, _nonce) = Pubkey::find_program_address(&[b"stake"], program_id);
 
         if *pda_account.key != pda{
             return Err(ProgramError::InvalidAccountData);
         }
- 
-        // pub fn create_associated_token_account(
-        //    funding_address: &Pubkey, 
-        //    wallet_address: &Pubkey, 
-        //    spl_token_mint_address: &Pubkey
-        // ) -> Instruction
-
-        // pub fn get_associated_token_address(
-        //     wallet_address: &Pubkey, 
-        //     spl_token_mint_address: &Pubkey
-        //  ) -> Pubkey
 
         let associated_token_address = get_associated_token_address(
             pda_account.key, 
@@ -93,22 +77,14 @@ impl Processor {
 
         if associated_token_address != *associated_token_account.key{
             return Err(ProgramError::InvalidAccountData);
-        }
-                
+        }   
 
         let associated_account_ix = create_associated_token_account(
-            &initializer.key, // funding - платит за транзакцию - пользователя
-            &pda, // для кого(нас)
+            &initializer.key, 
+            &pda,
             &nft_mint_account.key
         );
-        // [writeable,signer] Funding account (must be a system account)
-        // [writeable] Associated token account address to be created
-        // [] Wallet address for the new associated token account
-        // [] The token mint for the new associated token account
-        // [] System program
-        // [] SPL Token program
-        // [] Rent sysvar
-
+        
         let result = invoke(
             &associated_account_ix,
             &[
@@ -119,11 +95,10 @@ impl Processor {
                 system_program.clone(),
                 token_program.clone(),
                 rent_sysvar.clone()
-            ]
+            ],
         );
         msg!("result of create_associated_token_account =  {:?}  " , result );
-
-
+        let current_clock = Clock::from_account_info(clock_account_info)?;
         stake_info.is_initialized = true;
         stake_info.date_initialized = current_clock.unix_timestamp;
         stake_info.author_address = *initializer.key;
@@ -131,25 +106,7 @@ impl Processor {
         stake_info.associated_account = associated_token_address;
 
         Stake::pack(stake_info, &mut stake_account.try_borrow_mut_data()?)?;
-        // pub fn transfer(
-        //    token_program_id: &Pubkey, 
-        //    source_pubkey: &Pubkey, 
-        //    destination_pubkey: &Pubkey, 
-        //    authority_pubkey: &Pubkey, 
-        //    signer_pubkeys: &[&Pubkey], 
-        //    amount: u64
-        // ) -> Result<Instruction, ProgramError>
 
-        let associated_initializer_token_account = get_associated_token_address(
-            initializer.key, 
-            nft_mint_account.key,
-        );
-
-        if associated_initializer_token_account != *nft_token_account.key{
-            return Err(ProgramError::InvalidAccountData);
-        }
-
-        
         let transfer_to_assoc_ix = spl_token::instruction::transfer(
             token_program.key,
             nft_token_account.key,
@@ -186,28 +143,21 @@ impl Processor {
         let associated_token_account = next_account_info(account_info_iter)?;
         let pda_account = next_account_info(account_info_iter)?;
         let token_program = next_account_info(account_info_iter)?;
+        let associated_token_program = next_account_info(account_info_iter)?;
+        let clock_account_info = next_account_info(account_info_iter)?;
 
         if !initializer.is_signer {
             return Err(ProgramError::MissingRequiredSignature);
         }
 
         let mut stake_info = Stake::unpack(&stake_account.try_borrow_data()?)?;
-        // pub is_initialized: bool,
-        // pub date_initialized: UnixTimestamp,
-        // pub author_address: Pubkey,
-        // pub nft_address: Pubkey,
-        // pub associated_account: Pubkey,
         
-        let current_clock = Clock::get();
-        let current_clock = match current_clock {
-            Ok(clock) => clock,
-            Err(error) => panic!("Problem with clock: {:}", error),
-        };
-
+        let current_clock = Clock::from_account_info(clock_account_info)?;
         if !stake_info.is_initialized{
             return Err(StakeError::NotInitializedStake.into());
         }
-        if stake_info.date_initialized + MONTH < current_clock.unix_timestamp{
+        if stake_info.date_initialized + MONTH > current_clock.unix_timestamp{
+            msg!("needed vs current: {:?} vs {:?}", stake_info.date_initialized + MONTH, current_clock.unix_timestamp);
             return Err(StakeError::NotEnoughTime.into());
         }
         if stake_info.author_address != *initializer.key{
@@ -221,7 +171,6 @@ impl Processor {
         if *pda_account.key != pda{
             return Err(ProgramError::InvalidAccountData);
         }
-
         let associated_token_address = get_associated_token_address(
             pda_account.key, 
             nft_mint_account.key,
@@ -230,17 +179,17 @@ impl Processor {
         if associated_token_address != *associated_token_account.key{
             return Err(ProgramError::InvalidAccountData);
         }
-
         let transfer_to_assoc_ix = spl_token::instruction::transfer(
             token_program.key,
-            &associated_token_address,
+            associated_token_account.key,
             nft_token_account.key,
             &pda,
             &[&pda],
             1
         )?;
+        
         msg!("Calling the token program to transfer tokens to the nft");
-        let result = invoke(
+        let result = invoke_signed(
             &transfer_to_assoc_ix,
             &[
                 associated_token_account.clone(),
@@ -248,13 +197,10 @@ impl Processor {
                 pda_account.clone(),
                 token_program.clone(),
             ],
+            &[&[&b"stake"[..], &[_nonce]]],
         )?;
         
         msg!("result of transfer =  {:?}  " , result );
-        
-
         Ok(())
-
-    }
-    
+    } 
 }

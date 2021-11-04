@@ -16,6 +16,8 @@ pub enum StakeInstruction {
     /// 5. `[]` System Program
     /// 6. `[]` Rent sysvar
     /// 7. `[]` Token program
+    /// 8. `[]` Associated token program id
+    /// 9. `[]` Clock sysvar
     Stake {
     },
     /// Unstake NFT 
@@ -30,8 +32,10 @@ pub enum StakeInstruction {
     /// 3. `[writable]` Associated token account
     /// 4. `[writable]` PDA account
     /// 5. `[]` Token program
+    /// 6. `[]` Associated token program id
+    /// 7. `[]` Clock sysvar
     Unstake {
-    },
+    }
 }
 
 impl StakeInstruction {
@@ -42,7 +46,7 @@ impl StakeInstruction {
         Ok(match tag {
             0 => Self::Stake{},
             1 => Self::Unstake{},
-            _ => return Err(InvalidInstruction.into()),
+            _ => return Err(ProgramError::InvalidAccountData),
         })
     }
 }

@@ -10,7 +10,7 @@ use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
 #[derive(BorshSerialize, BorshDeserialize, Debug)]
 pub struct Stake {
    pub is_initialized: bool,
-   pub date_initialized: UnixTimestamp,
+   pub date_initialized: i64,
    pub author_address: Pubkey,
    pub nft_address: Pubkey,
    pub associated_account: Pubkey,

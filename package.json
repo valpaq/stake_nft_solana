@@ -15,7 +15,8 @@
     "deploy": "solana program deploy /home/viktor/rustec/nft_solana/dist/program/staking_program.so",
     "mint": "ts-node src/client/mint.ts",
     "stake": "ts-node src/client/stake.ts",
-    "unstake": "ts-node src/client/unstake.ts"
+    "unstake": "ts-node src/client/unstake.ts",
+    "prep": "npm run build && npm run get-sol && npm run deploy && npm run mint && npm run stake"
   },
   "dependencies": {
     "@solana/spl-token": "^0.1.8",

@@ -9,8 +9,10 @@ import {
   TransactionInstruction,
   Transaction,
   sendAndConfirmTransaction,
+  SYSVAR_CLOCK_PUBKEY,
+  SYSVAR_RENT_PUBKEY,
 } from '@solana/web3.js';
-import {TOKEN_PROGRAM_ID} from "@solana/spl-token";
+import {TOKEN_PROGRAM_ID, Token, ASSOCIATED_TOKEN_PROGRAM_ID} from "@solana/spl-token";
 import fs from 'mz/fs';
 import path from 'path';
 import * as simple from "./simple_utils";
@@ -23,7 +25,7 @@ let initializer: Keypair ;
 let nftMintAccount: PublicKey;
 let nftTokenAccount: PublicKey;
 let stakeAccount: any; 
-let associatedTokenAccount: Keypair;
+let associatedTokenAccount: PublicKey;
 let pda_account: PublicKey;
 let systemProgram: Keypair;
 let rentSysvar: Keypair; 
@@ -57,14 +59,14 @@ export async function establishInitializer(): Promise<void> {
   fees += await connection.getMinimumBalanceForRentExemption(STAKE_SIZE);
 
   // Calculate the cost of sending transactions
-  fees += feeCalculator.lamportsPerSignature * 100; // wag
+  fees += feeCalculator.lamportsPerSignature * 1000; // wag
   initializer = await simple.createKeypairFromSFile("initializer");
   let lamports = await connection.getBalance(initializer.publicKey);
   if (lamports < fees) {
     // If current balance is not enough to pay for fees, request an airdrop
     const sig = await connection.requestAirdrop(
       initializer.publicKey,
-      fees * 20,
+      fees * 200,
     );
     await connection.confirmTransaction(sig);
     lamports = await connection.getBalance(initializer.publicKey);
@@ -100,6 +102,15 @@ export async function checkProgram(): Promise<void> {
   console.log(`Using program ${programId.toBase58()}`);
 }
 
+async function findAssociatedTokenAddress(walletAddress: PublicKey, tokenMintAddress: PublicKey): Promise<PublicKey> {
+  return (
+    await PublicKey.findProgramAddress(
+      [walletAddress.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), tokenMintAddress.toBuffer()],
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    )
+  )[0];
+}
+
 export async function getAllOtherAccounts(): Promise<void>{
   [pda_account, nonce] = await PublicKey.findProgramAddress(
     [Buffer.from('stake')],
@@ -107,9 +118,10 @@ export async function getAllOtherAccounts(): Promise<void>{
   );
   nftMintAccount = await simple.getPublicKey("mint_test");
   nftTokenAccount = await simple.getPublicKey("customer_test");
-  associatedTokenAccount = await simple.createKeypairFromSFile("associated_token_account");
+  // associatedTokenAccount = await simple.createKeypairFromSFile("associated_token_account");
   systemProgram = await simple.createKeypairFromSFile("system_program");
   rentSysvar = await simple.createKeypairFromSFile("rent_sysvar");
+  associatedTokenAccount = await findAssociatedTokenAddress(pda_account, nftMintAccount);
 
 
   // Check if the greeting account has already been created
@@ -147,17 +159,19 @@ export async function getAllOtherAccounts(): Promise<void>{
 export async function stake(): Promise<void> {
   const stakeInstruction = new TransactionInstruction({
     programId: programId,
-    data: Buffer.alloc(0),
+    data: Buffer.from(Uint8Array.of(0)),
     keys: [
       { pubkey: initializer.publicKey, isSigner: true, isWritable: false },
       { pubkey: nftMintAccount, isSigner: false, isWritable: true },
       { pubkey: nftTokenAccount, isSigner: false, isWritable: true },
       { pubkey: stakePubkey, isSigner: false, isWritable: true },
-      { pubkey: associatedTokenAccount.publicKey, isSigner: false, isWritable: true },
+      { pubkey: associatedTokenAccount, isSigner: false, isWritable: true },
       { pubkey: pda_account, isSigner: false, isWritable: true },
-      { pubkey: systemProgram.publicKey, isSigner: false, isWritable: false },
-      { pubkey: rentSysvar.publicKey, isSigner: false, isWritable: false },
-      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false},
+      { pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false}
     ],
   });
 
@@ -172,15 +186,17 @@ export async function stake(): Promise<void> {
 export async function unstake(): Promise<void> {
   const stakeInstruction = new TransactionInstruction({
     programId: programId,
-    data: Buffer.alloc(0),
+    data: Buffer.from(Uint8Array.of(1)),
     keys: [
       { pubkey: initializer.publicKey, isSigner: true, isWritable: false },
       { pubkey: nftMintAccount, isSigner: false, isWritable: true },
       { pubkey: nftTokenAccount, isSigner: false, isWritable: true },
-      { pubkey: stakeAccount, isSigner: false, isWritable: true },
-      { pubkey: associatedTokenAccount.publicKey, isSigner: false, isWritable: true },
+      { pubkey: stakePubkey, isSigner: false, isWritable: true },
+      { pubkey: associatedTokenAccount, isSigner: false, isWritable: true },
       { pubkey: pda_account, isSigner: false, isWritable: true },
-      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false }
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false},
+      { pubkey: SYSVAR_CLOCK_PUBKEY, isSigner: false, isWritable: false}
     ],
   });
 

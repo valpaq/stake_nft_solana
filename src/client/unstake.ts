@@ -14,7 +14,7 @@ async function main() {
   console.log("connection");
 
   await establishInitializer();
-  console.log("connection");
+  console.log("initializer");
 
   await checkProgram();
   console.log("program");
