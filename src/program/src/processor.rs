@@ -98,7 +98,7 @@ impl Processor {
             ],
         );
         msg!("result of create_associated_token_account =  {:?}  " , result );
-        let current_clock = Clock::from_account_info(clock_account_info)?;
+        let current_clock = &Clock::from_account_info(clock_account_info)?;
         stake_info.is_initialized = true;
         stake_info.date_initialized = current_clock.unix_timestamp;
         stake_info.author_address = *initializer.key;
@@ -152,7 +152,7 @@ impl Processor {
 
         let mut stake_info = Stake::unpack(&stake_account.try_borrow_data()?)?;
         
-        let current_clock = Clock::from_account_info(clock_account_info)?;
+        let current_clock = &Clock::from_account_info(clock_account_info)?;
         if !stake_info.is_initialized{
             return Err(StakeError::NotInitializedStake.into());
         }
