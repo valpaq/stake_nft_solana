@@ -20,8 +20,8 @@ let connection: Connection;
 
 
 let initializer: Keypair ;
-let nftMintAccount: Keypair;
-let nftTokenAccount: Keypair;
+let nftMintAccount: PublicKey;
+let nftTokenAccount: PublicKey;
 let stakeAccount: any; 
 let associatedTokenAccount: Keypair;
 let pda_account: PublicKey;
@@ -105,8 +105,8 @@ export async function getAllOtherAccounts(): Promise<void>{
     [Buffer.from('stake')],
     programId
   );
-  nftMintAccount = await simple.createKeypairFromSFile("nft_mint_account");
-  nftTokenAccount = await simple.createKeypairFromSFile("nft_token_account");
+  nftMintAccount = await simple.getPublicKey("mint_test");
+  nftTokenAccount = await simple.getPublicKey("customer_test");
   associatedTokenAccount = await simple.createKeypairFromSFile("associated_token_account");
   systemProgram = await simple.createKeypairFromSFile("system_program");
   rentSysvar = await simple.createKeypairFromSFile("rent_sysvar");
@@ -150,8 +150,8 @@ export async function stake(): Promise<void> {
     data: Buffer.alloc(0),
     keys: [
       { pubkey: initializer.publicKey, isSigner: true, isWritable: false },
-      { pubkey: nftMintAccount.publicKey, isSigner: false, isWritable: true },
-      { pubkey: nftTokenAccount.publicKey, isSigner: false, isWritable: true },
+      { pubkey: nftMintAccount, isSigner: false, isWritable: true },
+      { pubkey: nftTokenAccount, isSigner: false, isWritable: true },
       { pubkey: stakePubkey, isSigner: false, isWritable: true },
       { pubkey: associatedTokenAccount.publicKey, isSigner: false, isWritable: true },
       { pubkey: pda_account, isSigner: false, isWritable: true },
@@ -175,8 +175,8 @@ export async function unstake(): Promise<void> {
     data: Buffer.alloc(0),
     keys: [
       { pubkey: initializer.publicKey, isSigner: true, isWritable: false },
-      { pubkey: nftMintAccount.publicKey, isSigner: false, isWritable: true },
-      { pubkey: nftTokenAccount.publicKey, isSigner: false, isWritable: true },
+      { pubkey: nftMintAccount, isSigner: false, isWritable: true },
+      { pubkey: nftTokenAccount, isSigner: false, isWritable: true },
       { pubkey: stakeAccount, isSigner: false, isWritable: true },
       { pubkey: associatedTokenAccount.publicKey, isSigner: false, isWritable: true },
       { pubkey: pda_account, isSigner: false, isWritable: true },
