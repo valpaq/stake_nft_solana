@@ -1,5 +1,5 @@
-import os from 'os';
-import yaml from 'yaml';
+//@ts-expect-error missing types
+import * as BufferLayout from "buffer-layout";
 import {
   Keypair,
   Connection,
@@ -205,4 +205,54 @@ export async function unstake(): Promise<void> {
     [initializer],
     { skipPreflight: false, preflightCommitment: "confirmed" }
   );
+}
+
+/**
+ * Layout for a public key
+ */
+ const publicKey = (property = "publicKey") => {
+  return BufferLayout.blob(32, property);
+};
+
+/**
+ * Layout for a 64bit signed value
+ */
+ const int64 = (property = "int64") => {
+  return BufferLayout.blob(8, property);
+};
+
+export const STAKE_ACCOUNT_DATA_LAYOUT = BufferLayout.struct([
+  BufferLayout.u8("isInitialized"),
+  BufferLayout.u32("date_initialized"),
+  publicKey("author_address"),
+  publicKey("nft_address"),
+  publicKey("associated_account"),
+]);
+
+export interface StakeLayout {
+  isInitialized: number;
+  date_initialized: number;
+  author_address: Uint8Array;
+  nft_address: Uint8Array;
+  associated_account: Uint8Array;
+}
+
+export async function checkStakes(){
+  let accounts = await connection.getProgramAccounts(programId);
+  let to_return = [];
+  for (let i = 0; i < accounts.length; i++){
+    const encodedStakeState = accounts[i].account.data;
+    const decodedStakeState = STAKE_ACCOUNT_DATA_LAYOUT.decode(
+      encodedStakeState
+    ) as StakeLayout;
+    const dedecodedStakeStake = {
+      isInitialized: decodedStakeState.isInitialized,
+      date_initialized: decodedStakeState.date_initialized,
+      author_address: new PublicKey(decodedStakeState.author_address).toBase58(),
+      nft_address: new PublicKey(decodedStakeState.nft_address).toBase58(),
+      associated_account: new PublicKey(decodedStakeState.associated_account).toBase58()
+    }
+    to_return.push(dedecodedStakeStake);
+  }
+  return to_return;
 }

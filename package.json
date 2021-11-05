@@ -16,12 +16,14 @@
     "mint": "ts-node src/client/mint.ts",
     "stake": "ts-node src/client/stake.ts",
     "unstake": "ts-node src/client/unstake.ts",
-    "prep": "npm run build && npm run get-sol && npm run deploy && npm run mint && npm run stake"
+    "prep": "npm run build && npm run get-sol && npm run deploy && npm run mint && npm run stake",
+    "checkStakes": "ts-node src/client/check_stakes.ts"
   },
   "dependencies": {
     "@solana/spl-token": "^0.1.8",
     "@solana/web3.js": "^1.30.2",
     "borsh": "^0.6.0",
+    "buffer-layout": "^1.2.2",
     "mz": "^2.7.0",
     "yaml": "^1.10.2"
   },
