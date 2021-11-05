@@ -10,14 +10,14 @@ import {
 
 async function main() {
 
-  await establishConnection();
+  const connection = await establishConnection();
   
   console.log("connection");
   
-  await checkProgram();
+  const programId = await checkProgram(connection);
   console.log("program");
 
-  let stakes = await checkStakes();
+  const stakes = await checkStakes(connection, programId);
 
   console.log(stakes);
   console.log('Success');

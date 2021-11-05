@@ -8,21 +8,21 @@ import {
 
 
 async function main() {
-  console.log("Let's unstake an nft");
+  console.log("Let's stake an nft");
 
-  await establishConnection();
-  console.log("connection");
+  const connection = await establishConnection();
 
-  await establishInitializer();
-  console.log("initializer");
+  const initializer = await establishInitializer(connection);
+  
+  const programId = await checkProgram(connection);
 
-  await checkProgram();
-  console.log("program");
+  const [pda_account, nftMintAccount, nftTokenAccount, 
+          associatedTokenAccount, stakePubkey] 
+            = await getAllOtherAccounts(connection, initializer, programId);
 
-  await getAllOtherAccounts();
-  console.log("otherAccounts");
-
-  await unstake();
+  await unstake(connection, programId, initializer,
+    nftMintAccount, nftTokenAccount, stakePubkey,
+    associatedTokenAccount, pda_account);
 
   console.log('Success');
 }

@@ -10,20 +10,19 @@
   async function main() {
     console.log("Let's stake an nft");
   
-    await establishConnection();
-    
-    console.log("connection");
+    const connection = await establishConnection();
   
-    await establishInitializer();
-    console.log("initializer");
+    const initializer = await establishInitializer(connection);
     
-    await checkProgram();
-    console.log("program");
+    const programId = await checkProgram(connection);
   
-    await getAllOtherAccounts();
-    console.log("other");
+    const [pda_account, nftMintAccount, nftTokenAccount, 
+            associatedTokenAccount, stakePubkey] 
+              = await getAllOtherAccounts(connection, initializer, programId);
 
-    await stake();
+    await stake(connection, programId, initializer,
+      nftMintAccount, nftTokenAccount, stakePubkey,
+      associatedTokenAccount, pda_account);
   
     console.log('Success');
   }
