@@ -230,7 +230,7 @@ export const STAKE_ACCOUNT_DATA_LAYOUT = BufferLayout.struct([
 ]);
 
 export interface StakeLayout {
-  isInitialized: number;
+  isInitialized: boolean;
   date_initialized: number;
   author_address: Uint8Array;
   nft_address: Uint8Array;
@@ -246,7 +246,7 @@ export async function checkStakes(){
       encodedStakeState
     ) as StakeLayout;
     const dedecodedStakeStake = {
-      isInitialized: decodedStakeState.isInitialized,
+      isInitialized: new Boolean(decodedStakeState.isInitialized).valueOf(),
       date_initialized: decodedStakeState.date_initialized,
       author_address: new PublicKey(decodedStakeState.author_address).toBase58(),
       nft_address: new PublicKey(decodedStakeState.nft_address).toBase58(),
