@@ -60,15 +60,12 @@ export async function establishInitializer(connection: Connection): Promise<Keyp
   let fees = 0;
   const {feeCalculator} = await connection.getRecentBlockhash();
 
-  // Calculate the cost to fund the greeter account
   fees += await connection.getMinimumBalanceForRentExemption(STAKE_SIZE);
 
-  // Calculate the cost of sending transactions
-  fees += feeCalculator.lamportsPerSignature * 1000; // wag
+  fees += feeCalculator.lamportsPerSignature * 1000; 
   const initializer = await simple.createKeypairFromSFile("initializer");
   let lamports = await connection.getBalance(initializer.publicKey);
   if (lamports < fees) {
-    // If current balance is not enough to pay for fees, request an airdrop
     const sig = await connection.requestAirdrop(
       initializer.publicKey,
       fees * 200,
@@ -81,7 +78,6 @@ export async function establishInitializer(connection: Connection): Promise<Keyp
 }
 
 export async function checkProgram(connection: Connection): Promise<PublicKey> {
-  // Read program id from keypair file
   let programId;
   try {
     const programKeypair = await simple.createKeypairFromFile(PROGRAM_KEYPAIR_PATH);
@@ -93,7 +89,6 @@ export async function checkProgram(connection: Connection): Promise<PublicKey> {
     );
   }
 
-  // Check if the program has been deployed
   const programInfo = await connection.getAccountInfo(programId);
   if (programInfo === null) {
     if (fs.existsSync(PROGRAM_SO_PATH)) {

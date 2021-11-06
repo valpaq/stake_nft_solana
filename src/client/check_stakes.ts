@@ -1,6 +1,3 @@
-// функцию, которая возвращает все стейки, которые есть в контракте? В десериализованном виде
-// getProgramAccounts
-
 import {
   establishConnection,
   checkProgram,

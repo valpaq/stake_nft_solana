@@ -9,7 +9,6 @@ use solana_program::{
     sysvar::{Sysvar},
     clock::Clock
 };
-use borsh::{BorshDeserialize, BorshSerialize};
 use spl_associated_token_account::{
     create_associated_token_account, get_associated_token_address};
 const MONTH: i64 = 60*60*24*365/12; // 2 628 000
@@ -52,7 +51,7 @@ impl Processor {
         let system_program = next_account_info(account_info_iter)?;
         let rent_sysvar = next_account_info(account_info_iter)?; 
         let token_program = next_account_info(account_info_iter)?;
-        let associated_token_program = next_account_info(account_info_iter)?;
+        let _associated_token_program = next_account_info(account_info_iter)?;
         let clock_account_info = next_account_info(account_info_iter)?;
         
         if !initializer.is_signer { 
@@ -143,14 +142,14 @@ impl Processor {
         let associated_token_account = next_account_info(account_info_iter)?;
         let pda_account = next_account_info(account_info_iter)?;
         let token_program = next_account_info(account_info_iter)?;
-        let associated_token_program = next_account_info(account_info_iter)?;
+        let _associated_token_program = next_account_info(account_info_iter)?;
         let clock_account_info = next_account_info(account_info_iter)?;
 
         if !initializer.is_signer {
             return Err(ProgramError::MissingRequiredSignature);
         }
 
-        let mut stake_info = Stake::unpack(&stake_account.try_borrow_data()?)?;
+        let stake_info = Stake::unpack(&stake_account.try_borrow_data()?)?;
         
         let current_clock = &Clock::from_account_info(clock_account_info)?;
         if !stake_info.is_initialized{
